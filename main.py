@@ -1,9 +1,13 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+import requests
 
-url_inicial = "https://transparencia.xunta.gal/"
+url_inicial = "https://transparencia.xunta.gal"
 
 
 def get_driver():
@@ -14,7 +18,7 @@ def get_driver():
 
 
 def ir_a_principal(driver):
-    url = url_inicial + 'tema/transparencia-institucional/goberno-e-altos-cargos/administracion-xeral'
+    url = url_inicial + '/tema/transparencia-institucional/goberno-e-altos-cargos/administracion-xeral'
     driver.get(url)
 
 
@@ -63,18 +67,53 @@ def obtener_lista_cargos(elementos_con_titulo):
     return lista
 
 
-def ir_a_biografia(driver, persona):
-    url = persona["url"]
-    driver.get(url)
-    WebDriverWait(driver, 10).until(lambda x: x.find_element(By.ID, "audioContido"))
-    return driver
+def obtener_biografia(driver: WebDriver):
+    biografia: WebElement = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable(driver.find_element(By.ID, "audioContido"))
+    )
+    text_biografia = ""
+    for ul in biografia.find_elements(By.TAG_NAME, "ul"):
+        for li in ul.find_elements(By.TAG_NAME, "li"):
+            text_biografia += li.text + "\n"
+    for p in biografia.find_elements(By.TAG_NAME, "p"):
+        if p.text:
+            text_biografia += p.text + "\n"
+    return text_biografia
+
+
+def obtener_url_foto(driver: WebDriver):
+    try:
+        img = driver.find_element(By.ID, "owlImaxes").find_element(By.XPATH, "//img")
+        src = img.get_attribute("src")
+        image_link = url_inicial + src
+        return image_link
+    except Exception as e:
+        print("sin foto", e)
+        return ""
+    pass
+
+
+def obtener_datos_interesantes(driver: WebDriver):
+    biografia = obtener_biografia(driver)
+    foto = obtener_url_foto(driver)
+    # contacto = obtener_contacto()
+    # retribucion_anual = obtener_retribucion()
+
+    pass
 
 
 def main():
-    driver = get_driver()
+    driver: WebDriver = get_driver()
     ir_a_principal(driver)
     elementos_con_titulo = obtener_lista(driver)
     lista = obtener_lista_cargos(elementos_con_titulo)
+    for persona in lista:
+        url = persona["url"]
+        if url == "":
+            continue
+        print(persona["nombre"])
+        driver.get(url)
+        obtener_datos_interesantes(driver)
 
     [print(item) for item in lista]
     pass
