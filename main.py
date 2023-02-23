@@ -83,21 +83,60 @@ def obtener_biografia(driver: WebDriver):
 
 def obtener_url_foto(driver: WebDriver):
     try:
-        img = driver.find_element(By.ID, "owlImaxes").find_element(By.XPATH, "//img")
+        img = driver.find_element(By.ID, "owlImaxes").find_element(By.TAG_NAME, "img")
         src = img.get_attribute("src")
-        image_link = url_inicial + src
-        return image_link
+        division = src.split("=")
+        src = division[0] + "=" + str(int(division[1]) + 1)
+        return src
     except Exception as e:
-        print("sin foto", e)
+        print("sin foto")
         return ""
     pass
+
+
+def obtener_contacto(contacto_y_retribucion):
+    contactos_enlaces = contacto_y_retribucion.find_elements(By.TAG_NAME, "a")
+    contactos = {}
+    for contacto in contactos_enlaces:
+        if "mailto:" in contacto.get_attribute("href"):
+            contactos["correo"] = contacto.get_attribute("href").replace("mailto:", "")
+            continue
+        contactos[contacto.text] = contacto.get_attribute("href")
+    if "Tel.:" in contacto_y_retribucion.text:
+        contactos["telefono"] = contacto_y_retribucion.text.split("Tel.: ")[1].split("\n")[0].strip()
+    return contactos
+
+
+def obtener_retribuciones(contacto_y_retribucion: str):
+    retribucion = contacto_y_retribucion.split("Retribución anual:")[1]
+    retribucion_anual = "Retribución anual:" + retribucion.strip()
+    retribuciones = {}
+    if "Salario:" in retribucion_anual:
+        retribuciones["salario"] = retribucion_anual.split("Salario:")[1].split("€")[0].strip()
+    if "Salario bruto anual:" in retribucion_anual:
+        retribuciones["salario bruto anual"] = retribucion_anual.split("Salario bruto anual:")[1].split("€")[0].strip()
+    if "Trienios:" in retribucion_anual:
+        retribuciones["trienios"] = retribucion_anual.split("Trienios:")[1].split("€")[0].strip()
+    if "Complemento de carreira:" in retribucion_anual:
+        retribuciones["Complemento de carreira"] = retribucion_anual.split("Complemento de carreira:")[1].split("€")[
+            0].strip()
+    if "total anual" in retribucion_anual:
+        retribuciones["total anual"] = retribucion_anual.split("Total anual:")[1].split("€")[0].strip(),
+    return retribuciones
 
 
 def obtener_datos_interesantes(driver: WebDriver):
     biografia = obtener_biografia(driver)
     foto = obtener_url_foto(driver)
-    # contacto = obtener_contacto()
-    # retribucion_anual = obtener_retribucion()
+    contacto_y_retribucion = driver.find_element(By.TAG_NAME, "blockquote")
+    contactos = obtener_contacto(contacto_y_retribucion)
+    retribuciones = obtener_retribuciones(contacto_y_retribucion.text)
+    return {
+        "biografia": biografia,
+        "foto": foto,
+        "contacto": contactos,
+        "retribucion": retribuciones,
+    }
 
     pass
 
@@ -113,9 +152,9 @@ def main():
             continue
         print(persona["nombre"])
         driver.get(url)
-        obtener_datos_interesantes(driver)
+        persona["datos"] = obtener_datos_interesantes(driver)
 
-    [print(item) for item in lista]
+    [print(item, ",") for item in lista]
     pass
 
 
