@@ -5,7 +5,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-import requests
+import json
 
 url_inicial = "https://transparencia.xunta.gal"
 
@@ -161,7 +161,9 @@ def main():
         driver.get(url)
         persona["datos"] = obtener_datos_interesantes(driver)
 
-    [print(item, ",") for item in lista]
+    driver.quit()
+    with open("datos.json", "w", encoding="utf8") as f:
+        json.dump(lista, f, indent=4, ensure_ascii=False)
     pass
 
 
