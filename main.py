@@ -89,9 +89,14 @@ def obtener_url_foto(driver: WebDriver):
         src = division[0] + "=" + str(int(division[1]) + 1)
         return src
     except Exception as e:
-        print("sin foto")
         return ""
     pass
+
+
+def clean_mailto(url):
+    return url.replace("mailto:", "").replace("&", "") \
+        .replace("amp;", "") \
+        .replace("#xA;", "")
 
 
 def obtener_contacto(contacto_y_retribucion):
@@ -99,7 +104,7 @@ def obtener_contacto(contacto_y_retribucion):
     contactos = {}
     for contacto in contactos_enlaces:
         if "mailto:" in contacto.get_attribute("href"):
-            contactos["correo"] = contacto.get_attribute("href").replace("mailto:", "")
+            contactos["correo"] = clean_mailto(contacto.get_attribute("href"))
             continue
         contactos[contacto.text] = contacto.get_attribute("href")
     if "Tel.:" in contacto_y_retribucion.text:
@@ -107,21 +112,24 @@ def obtener_contacto(contacto_y_retribucion):
     return contactos
 
 
+def clean_retribucion(retribucion, tipo_retribucion):
+    return retribucion.split(tipo_retribucion)[1].split("€")[0].strip()
+
+
 def obtener_retribuciones(contacto_y_retribucion: str):
     retribucion = contacto_y_retribucion.split("Retribución anual:")[1]
     retribucion_anual = "Retribución anual:" + retribucion.strip()
     retribuciones = {}
     if "Salario:" in retribucion_anual:
-        retribuciones["salario"] = retribucion_anual.split("Salario:")[1].split("€")[0].strip()
+        retribuciones["Salario"] = clean_retribucion(retribucion_anual, "Salario:")
     if "Salario bruto anual:" in retribucion_anual:
-        retribuciones["salario bruto anual"] = retribucion_anual.split("Salario bruto anual:")[1].split("€")[0].strip()
+        retribuciones["Salario bruto anual"] = clean_retribucion(retribucion_anual, "Salario bruto anual:")
     if "Trienios:" in retribucion_anual:
-        retribuciones["trienios"] = retribucion_anual.split("Trienios:")[1].split("€")[0].strip()
+        retribuciones["Trienios"] = clean_retribucion(retribucion_anual, "Trienios:")
     if "Complemento de carreira:" in retribucion_anual:
-        retribuciones["Complemento de carreira"] = retribucion_anual.split("Complemento de carreira:")[1].split("€")[
-            0].strip()
+        retribuciones["Complemento de carreira"] = clean_retribucion(retribucion_anual, "Complemento de carreira:")
     if "total anual" in retribucion_anual:
-        retribuciones["total anual"] = retribucion_anual.split("Total anual:")[1].split("€")[0].strip(),
+        retribuciones["Total anual"] = clean_retribucion(retribucion_anual, "Total anual:")
     return retribuciones
 
 
@@ -150,7 +158,6 @@ def main():
         url = persona["url"]
         if url == "":
             continue
-        print(persona["nombre"])
         driver.get(url)
         persona["datos"] = obtener_datos_interesantes(driver)
 
